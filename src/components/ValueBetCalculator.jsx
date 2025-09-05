@@ -1,8 +1,8 @@
 import React, { useState, useRef } from "react";
 
 export default function ValueBetCalculator() {
-  const [totalStake, setTotalStake] = useState(100);
-  const [picks, setPicks] = useState([{ odds: "" }]);
+  const [totalStake, setTotalStake] = useState("100"); // keep as string
+  const [picks, setPicks] = useState([{ odds: "" }]); // keep odds as string
   const [results, setResults] = useState([]);
   const resultsRef = useRef(null);
 
@@ -12,23 +12,19 @@ export default function ValueBetCalculator() {
     setPicks(updated);
   };
 
-  const addPick = () => {
-    setPicks([...picks, { odds: "" }]);
-  };
-
-  const removePick = (index) => {
-    const updated = picks.filter((_, i) => i !== index);
-    setPicks(updated);
-  };
-
+  const addPick = () => setPicks([...picks, { odds: "" }]);
+  const removePick = (index) => setPicks(picks.filter((_, i) => i !== index));
   const resetAll = () => {
-    setTotalStake(100);
+    setTotalStake("100");
     setPicks([{ odds: "" }]);
     setResults([]);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const calculate = () => {
+    const totalStakeNum = parseFloat(totalStake);
+    if (isNaN(totalStakeNum) || totalStakeNum <= 0) return;
+
     const oddsList = picks
       .map((p) => parseFloat(p.odds))
       .filter((o) => !isNaN(o) && o > 1);
@@ -38,15 +34,34 @@ export default function ValueBetCalculator() {
     const denominator = oddsList.reduce((sum, o) => sum + 1 / o, 0);
 
     const stakeResults = oddsList.map((odds) => {
-      const stake = ((totalStake * (1 / odds)) / denominator).toFixed(2);
-      const payout = (odds * stake).toFixed(2);
-      return { odds, stake, payout };
+      // Dutching calculation
+      const stakeDutch = ((totalStakeNum * (1 / odds)) / denominator).toFixed(2);
+      const payoutDutch = (odds * stakeDutch).toFixed(2);
+
+      // Guaranteed Stake Return calculation
+      const stakeGuaranteed = (totalStakeNum / odds).toFixed(2);
+      const payoutGuaranteed = (odds * stakeGuaranteed).toFixed(2);
+
+      const difference = (payoutDutch - payoutGuaranteed).toFixed(2);
+
+      return {
+        odds,
+        stakeDutch,
+        payoutDutch,
+        stakeGuaranteed,
+        payoutGuaranteed,
+        difference,
+      };
     });
 
     setResults(stakeResults);
-    if (resultsRef.current) {
-      resultsRef.current.scrollIntoView({ behavior: "smooth" });
-    }
+    if (resultsRef.current) resultsRef.current.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const rowColor = (r) => {
+    if (parseFloat(r.payoutDutch) > parseFloat(r.payoutGuaranteed)) return "bg-green-200";
+    if (parseFloat(r.payoutGuaranteed) > parseFloat(r.payoutDutch)) return "bg-red-200";
+    return "bg-gray-100";
   };
 
   return (
@@ -59,9 +74,9 @@ export default function ValueBetCalculator() {
         <div className="mb-4">
           <label className="block mb-1 font-semibold">Total Stake ($)</label>
           <input
-            type="number"
+            type="text" // allow free input
             value={totalStake}
-            onChange={(e) => setTotalStake(Number(e.target.value))}
+            onChange={(e) => setTotalStake(e.target.value)}
             className="border rounded p-2 w-full"
           />
         </div>
@@ -69,7 +84,7 @@ export default function ValueBetCalculator() {
         {picks.map((pick, i) => (
           <div key={i} className="flex items-center gap-2 mb-2">
             <input
-              type="number"
+              type="text" // allow free input
               placeholder={`Odds ${i + 1}`}
               value={pick.odds}
               onChange={(e) => handlePickChange(i, e.target.value)}
@@ -112,22 +127,28 @@ export default function ValueBetCalculator() {
         {results.length > 0 && (
           <div ref={resultsRef} className="mt-6 border rounded max-h-80 overflow-y-auto">
             <h2 className="text-xl font-semibold mb-2 p-2 sticky top-0 bg-white z-10 border-b">
-              Results
+              Results (Dutching & Guaranteed Stake Return)
             </h2>
-            <table className="w-full border-collapse border">
+            <table className="w-full border-collapse border text-sm">
               <thead>
-                <tr>
+                <tr className="bg-gray-200">
                   <th className="border p-2">Odds</th>
-                  <th className="border p-2">Stake</th>
-                  <th className="border p-2">Potential Payout</th>
+                  <th className="border p-2">Stake (Dutching)</th>
+                  <th className="border p-2">Expected Return (Dutching)</th>
+                  <th className="border p-2">Stake (Guaranteed Return)</th>
+                  <th className="border p-2">Expected Return (Guaranteed Return)</th>
+                  <th className="border p-2">Difference</th>
                 </tr>
               </thead>
               <tbody>
                 {results.map((r, i) => (
-                  <tr key={i} className="bg-green-100">
+                  <tr key={i} className={rowColor(r)}>
                     <td className="border p-2">{r.odds}</td>
-                    <td className="border p-2">${r.stake}</td>
-                    <td className="border p-2 font-semibold">${r.payout}</td>
+                    <td className="border p-2">${r.stakeDutch}</td>
+                    <td className="border p-2 font-semibold">${r.payoutDutch}</td>
+                    <td className="border p-2">${r.stakeGuaranteed}</td>
+                    <td className="border p-2 font-semibold">${r.payoutGuaranteed}</td>
+                    <td className="border p-2 font-semibold">${r.difference}</td>
                   </tr>
                 ))}
               </tbody>
