@@ -20,19 +20,21 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
           cache: npm
 
       - name: Install dependencies
         run: npm install
+        working-directory: ./Winning-Goals-Value-Bet
 
       - name: Build project
         run: npm run build
+        working-directory: ./Winning-Goals-Value-Bet
 
       - name: Upload production-ready build files
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./dist
+          path: ./Winning-Goals-Value-Bet/dist
 
   deploy:
     needs: build
