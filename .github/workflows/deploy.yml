@@ -1,8 +1,9 @@
-name: Deploy Vite app to GitHub Pages
+name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - main
 
 permissions:
   contents: read
@@ -12,29 +13,26 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
+      - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
 
       - name: Install dependencies
-        run: npm install
-        working-directory: ./Winning-Goals-Value-Bet
+        run: npm ci
 
       - name: Build project
         run: npm run build
-        working-directory: ./Winning-Goals-Value-Bet
 
-      - name: Upload production-ready build files
+      - name: Upload build artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./Winning-Goals-Value-Bet/dist
+          path: ./dist
 
   deploy:
     needs: build
@@ -42,7 +40,6 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
