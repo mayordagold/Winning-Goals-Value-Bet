@@ -1,9 +1,14 @@
 import React, { useState, useRef } from "react";
 
 export default function ValueBetCalculator() {
-  const [totalStake, setTotalStake] = useState("100"); // keep as string
-  const [picks, setPicks] = useState([{ odds: "" }]); // keep odds as string
-  const [results, setResults] = useState([]);
+  const [totalStake, setTotalStake] = useState("100");
+  const [picks, setPicks] = useState([{ odds: "" }]);
+  const [results, setResults] = useState({
+    dutching: [],
+    guaranteed: [],
+    moneyBack: [],
+  });
+  const [activeTab, setActiveTab] = useState("dutching");
   const resultsRef = useRef(null);
 
   const handlePickChange = (index, value) => {
@@ -17,7 +22,8 @@ export default function ValueBetCalculator() {
   const resetAll = () => {
     setTotalStake("100");
     setPicks([{ odds: "" }]);
-    setResults([]);
+    setResults({ dutching: [], guaranteed: [], moneyBack: [] });
+    setActiveTab("dutching");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -31,60 +37,147 @@ export default function ValueBetCalculator() {
 
     if (oddsList.length === 0) return;
 
+    // Dutching
     const denominator = oddsList.reduce((sum, o) => sum + 1 / o, 0);
-
-    const stakeResults = oddsList.map((odds) => {
-      // Dutching calculation
-      const stakeDutch = ((totalStakeNum * (1 / odds)) / denominator).toFixed(2);
-      const payoutDutch = (odds * stakeDutch).toFixed(2);
-
-      // Guaranteed Stake Return calculation
-      const stakeGuaranteed = (totalStakeNum / odds).toFixed(2);
-      const payoutGuaranteed = (odds * stakeGuaranteed).toFixed(2);
-
-      const difference = (payoutDutch - payoutGuaranteed).toFixed(2);
-
-      return {
-        odds,
-        stakeDutch,
-        payoutDutch,
-        stakeGuaranteed,
-        payoutGuaranteed,
-        difference,
-      };
+    const dutchingResults = oddsList.map((odds) => {
+      const stake = ((totalStakeNum * (1 / odds)) / denominator).toFixed(2);
+      const payout = (odds * stake).toFixed(2);
+      return { odds, stake, payout };
     });
 
-    setResults(stakeResults);
-    if (resultsRef.current) resultsRef.current.scrollIntoView({ behavior: "smooth" });
+    // Guaranteed Return
+    const guaranteedResults = oddsList.map((odds) => {
+      const stake = (totalStakeNum / odds).toFixed(2);
+      const payout = (odds * stake).toFixed(2);
+      return { odds, stake, payout };
+    });
+
+    // Money Back Guarantee (new)
+    const moneyBackResults = oddsList.map((odds) => {
+      const stake = (totalStakeNum / odds).toFixed(2);
+      const payout = (odds * stake).toFixed(2);
+      const refund = (totalStakeNum - stake).toFixed(2);
+      const netReturn = (payout - totalStakeNum + parseFloat(refund)).toFixed(2);
+      return { odds, stake, payout, refund, netReturn };
+    });
+
+    setResults({
+      dutching: dutchingResults,
+      guaranteed: guaranteedResults,
+      moneyBack: moneyBackResults,
+    });
+
+    if (resultsRef.current) {
+      resultsRef.current.scrollIntoView({ behavior: "smooth" });
+    }
   };
 
-  const rowColor = (r) => {
-    if (parseFloat(r.payoutDutch) > parseFloat(r.payoutGuaranteed)) return "bg-green-200";
-    if (parseFloat(r.payoutGuaranteed) > parseFloat(r.payoutDutch)) return "bg-red-200";
+  const rowColor = (a, b) => {
+    if (parseFloat(a) > parseFloat(b)) return "bg-green-200";
+    if (parseFloat(b) > parseFloat(a)) return "bg-red-200";
     return "bg-gray-100";
+  };
+
+  const renderTable = () => {
+    if (activeTab === "dutching") {
+      return (
+        <table className="w-full border-collapse border text-sm">
+          <thead>
+            <tr className="bg-gray-200">
+              <th className="border p-2">Odds</th>
+              <th className="border p-2">Stake</th>
+              <th className="border p-2">Expected Return</th>
+            </tr>
+          </thead>
+          <tbody>
+            {results.dutching.map((r, i) => (
+              <tr key={i}>
+                <td className="border p-2">{r.odds}</td>
+                <td className="border p-2">${r.stake}</td>
+                <td className="border p-2 font-semibold">${r.payout}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      );
+    }
+
+    if (activeTab === "guaranteed") {
+      return (
+        <table className="w-full border-collapse border text-sm">
+          <thead>
+            <tr className="bg-gray-200">
+              <th className="border p-2">Odds</th>
+              <th className="border p-2">Stake</th>
+              <th className="border p-2">Expected Return</th>
+            </tr>
+          </thead>
+          <tbody>
+            {results.guaranteed.map((r, i) => (
+              <tr key={i}>
+                <td className="border p-2">{r.odds}</td>
+                <td className="border p-2">${r.stake}</td>
+                <td className="border p-2 font-semibold">${r.payout}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      );
+    }
+
+    if (activeTab === "moneyBack") {
+      return (
+        <table className="w-full border-collapse border text-sm">
+          <thead>
+            <tr className="bg-gray-200">
+              <th className="border p-2">Odds</th>
+              <th className="border p-2">Stake</th>
+              <th className="border p-2">Payout</th>
+              <th className="border p-2">Refund</th>
+              <th className="border p-2">Net Return</th>
+            </tr>
+          </thead>
+          <tbody>
+            {results.moneyBack.map((r, i) => (
+              <tr key={i}>
+                <td className="border p-2">{r.odds}</td>
+                <td className="border p-2">${r.stake}</td>
+                <td className="border p-2">${r.payout}</td>
+                <td className="border p-2">${r.refund}</td>
+                <td className="border p-2 font-semibold">${r.netReturn}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      );
+    }
+
+    return null;
   };
 
   return (
     <div className="flex flex-col min-h-screen">
       <div className="flex-grow p-6 max-w-3xl mx-auto">
         <h1 className="text-2xl font-bold mb-4">
-          ⚽ Winning-Goals Value Bet (Dutching) Calculator
+          ⚽ Winning-Goals Value Bet Calculator
         </h1>
 
+        {/* Stake input */}
         <div className="mb-4">
           <label className="block mb-1 font-semibold">Total Stake ($)</label>
           <input
-            type="text" // allow free input
+            type="text"
             value={totalStake}
             onChange={(e) => setTotalStake(e.target.value)}
             className="border rounded p-2 w-full"
           />
         </div>
 
+        {/* Odds input */}
         {picks.map((pick, i) => (
           <div key={i} className="flex items-center gap-2 mb-2">
             <input
-              type="text" // allow free input
+              type="text"
               placeholder={`Odds ${i + 1}`}
               value={pick.odds}
               onChange={(e) => handlePickChange(i, e.target.value)}
@@ -101,6 +194,7 @@ export default function ValueBetCalculator() {
           </div>
         ))}
 
+        {/* Action buttons */}
         <div className="mb-4 flex gap-2">
           <button
             onClick={addPick}
@@ -113,7 +207,7 @@ export default function ValueBetCalculator() {
             onClick={calculate}
             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
           >
-            Calculate Stakes
+            Calculate
           </button>
 
           <button
@@ -124,39 +218,52 @@ export default function ValueBetCalculator() {
           </button>
         </div>
 
-        {results.length > 0 && (
-          <div ref={resultsRef} className="mt-6 border rounded max-h-80 overflow-y-auto">
-            <h2 className="text-xl font-semibold mb-2 p-2 sticky top-0 bg-white z-10 border-b">
-              Results (Dutching & Guaranteed Stake Return)
-            </h2>
-            <table className="w-full border-collapse border text-sm">
-              <thead>
-                <tr className="bg-gray-200">
-                  <th className="border p-2">Odds</th>
-                  <th className="border p-2">Stake (Dutching)</th>
-                  <th className="border p-2">Expected Return (Dutching)</th>
-                  <th className="border p-2">Stake (Guaranteed Return)</th>
-                  <th className="border p-2">Expected Return (Guaranteed Return)</th>
-                  <th className="border p-2">Difference</th>
-                </tr>
-              </thead>
-              <tbody>
-                {results.map((r, i) => (
-                  <tr key={i} className={rowColor(r)}>
-                    <td className="border p-2">{r.odds}</td>
-                    <td className="border p-2">${r.stakeDutch}</td>
-                    <td className="border p-2 font-semibold">${r.payoutDutch}</td>
-                    <td className="border p-2">${r.stakeGuaranteed}</td>
-                    <td className="border p-2 font-semibold">${r.payoutGuaranteed}</td>
-                    <td className="border p-2 font-semibold">${r.difference}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        {/* Results Section */}
+        {(results.dutching.length > 0 ||
+          results.guaranteed.length > 0 ||
+          results.moneyBack.length > 0) && (
+          <div
+            ref={resultsRef}
+            className="mt-6 border rounded max-h-96 overflow-y-auto p-2 relative"
+          >
+            {/* Sticky Tabs */}
+            <div className="flex gap-2 mb-4 sticky top-0 bg-white p-2 border-b z-10">
+              <button
+                onClick={() => setActiveTab("dutching")}
+                className={`px-4 py-2 rounded ${
+                  activeTab === "dutching"
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-200 hover:bg-gray-300"
+                }`}
+              >
+                Dutching
+              </button>
+              <button
+                onClick={() => setActiveTab("guaranteed")}
+                className={`px-4 py-2 rounded ${
+                  activeTab === "guaranteed"
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-200 hover:bg-gray-300"
+                }`}
+              >
+                Guaranteed Return
+              </button>
+              <button
+                onClick={() => setActiveTab("moneyBack")}
+                className={`px-4 py-2 rounded ${
+                  activeTab === "moneyBack"
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-200 hover:bg-gray-300"
+                }`}
+              >
+                Money Back
+              </button>
+            </div>
+
+            {renderTable()}
           </div>
         )}
       </div>
-            {/* no comments */}
 
       <footer className="bg-gray-800 text-white text-center py-3 text-sm">
         © 2025 Olumayowa Oginni
