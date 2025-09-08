@@ -1,14 +1,10 @@
-name: Deploy Vite app to GitHub Pages
+# .github/workflows/deploy.yml
+name: Deploy to GitHub Pages
 
 on:
   push:
     branches:
-      - main
-
-permissions:
-  contents: read
-  pages: write
-  id-token: write
+      - main  # Trigger workflow on pushes to main branch
 
 jobs:
   build-and-deploy:
@@ -19,31 +15,25 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2️⃣ Setup Node.js
+      # 2️⃣ Set up Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
 
       # 3️⃣ Install dependencies
       - name: Install dependencies
         run: npm ci
 
-      # 4️⃣ Fix permissions for Vite (Linux runner)
-      - name: Fix Vite permissions
-        run: chmod +x ./node_modules/.bin/vite
+      # 4️⃣ Build the project (using npx to avoid permission issues)
+      - name: Build Vite app
+        run: npx vite build
 
-      # 5️⃣ Build the Vite app
-      - name: Build Vite project
-        run: npm run build
-
-      # 6️⃣ Deploy to GitHub Pages using GITHUB_TOKEN
+      # 5️⃣ Deploy to GitHub Pages
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
-          branch: gh-pages       # branch to deploy to
-          folder: dist           # build output folder
-          clean: true            # remove old files in gh-pages
-          commit-message: "chore: deploy from main branch"
-          token: ${{ secrets.GITHUB_TOKEN }}   # must use GITHUB_TOKEN for auth
+          branch: gh-pages           # Target branch
+          folder: dist               # Folder to deploy
+          token: ${{ secrets.GITHUB_TOKEN }} # Auth token from GitHub
+          clean: true                # Remove old files before deploying
