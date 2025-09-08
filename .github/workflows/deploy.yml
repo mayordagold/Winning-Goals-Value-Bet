@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout source code
+      # 1️⃣ Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -26,30 +26,24 @@ jobs:
           node-version: 20
           cache: npm
 
-      # 3️⃣ Verify Node & npm
-      - name: Verify Node.js and npm
-        run: |
-          node -v
-          npm -v
-
-      # 4️⃣ Install dependencies
+      # 3️⃣ Install dependencies
       - name: Install dependencies
         run: npm ci
 
-      # 5️⃣ Fix permissions for Vite
+      # 4️⃣ Fix permissions for Vite (Linux runner)
       - name: Fix Vite permissions
         run: chmod +x ./node_modules/.bin/vite
 
-      # 6️⃣ Build Vite app
+      # 5️⃣ Build the Vite app
       - name: Build Vite project
         run: npm run build
 
-      # 7️⃣ Deploy to GitHub Pages using GITHUB_TOKEN
+      # 6️⃣ Deploy to GitHub Pages using GITHUB_TOKEN
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
-          branch: gh-pages           # Branch to deploy to
-          folder: dist               # Folder containing build output
-          clean: true                # Delete existing contents in gh-pages
+          branch: gh-pages       # branch to deploy to
+          folder: dist           # build output folder
+          clean: true            # remove old files in gh-pages
           commit-message: "chore: deploy from main branch"
-          token: ${{ secrets.GITHUB_TOKEN }}  # Auth token for pushing
+          token: ${{ secrets.GITHUB_TOKEN }}   # must use GITHUB_TOKEN for auth
