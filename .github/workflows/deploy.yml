@@ -44,12 +44,12 @@ jobs:
       - name: Build Vite project
         run: npm run build
 
-      # 7️⃣ Deploy to GitHub Pages (creates gh-pages if missing)
+      # 7️⃣ Deploy to GitHub Pages using GITHUB_TOKEN
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
-          branch: gh-pages           # The branch the action should deploy to
-          folder: dist               # The folder containing built app
+          branch: gh-pages           # Branch to deploy to
+          folder: dist               # Folder containing build output
           clean: true                # Delete existing contents in gh-pages
           commit-message: "chore: deploy from main branch"
-          no-fail-on-empty-build: true
+          token: ${{ secrets.GITHUB_TOKEN }}  # Auth token for pushing
