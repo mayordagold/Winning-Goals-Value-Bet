@@ -18,5 +18,8 @@
     "postcss": "^8.4.0",
     "tailwindcss": "^3.3.3",
     "vite": "^5.4.20"
+  },
+  "overrides": {
+    "strip-ansi": "7.1.2"
   }
 }

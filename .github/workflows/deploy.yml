@@ -3,37 +3,29 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches:
-      - main   # Deploy when main branch is updated
+      - main
 
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
-
     steps:
-      # 1. Checkout the repository
-      - uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      # 2. Setup Node.js
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: '20'  # Match your local Node.js version
-          cache: 'yarn'
+          node-version: 20
+          cache: npm
 
-      # 3. Install dependencies
       - name: Install dependencies
-        run: yarn install
+        run: npm ci
 
-      # 4. Build the project
       - name: Build project
-        run: yarn build
+        run: npx vite build   # ✅ use npx to avoid permission issues
 
-      # 5. Deploy to GitHub Pages
       - name: Deploy to GitHub Pages
-        uses: JamesIves/github-pages-deploy-action@v4
+        uses: peaceiris/actions-gh-pages@v4
         with:
-          branch: gh-pages        # The branch the action should deploy to
-          folder: dist            # The folder to deploy
-          token: ${{ secrets.GITHUB_TOKEN }}  # Automatic token provided by GitHub
-          clean: true             # Clean the branch before deploying
-          commit-message: "chore: deploy from GitHub Actions"
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
